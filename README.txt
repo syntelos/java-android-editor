@@ -38,3 +38,9 @@ Build
 
     android install
 
+References
+
+    Editor, Bill Farmer, https://github.com/billthefarmer/editor
+
+    Android Samples, (Googlers), https://github.com/googlesamples
+
