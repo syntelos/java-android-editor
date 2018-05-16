@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu
+    xmlns:android="http://schemas.android.com/apk/res/android">
+  <item
+      android:id="@+id/open"
+      android:showAsAction="ifRoom"
+      android:title="@string/open"
+      android:icon="@drawable/ic_action_open" />
+  <item
+      android:id="@+id/save"
+      android:showAsAction="ifRoom"
+      android:title="@string/save"
+      android:icon="@drawable/ic_action_save" />
+</menu>
