@@ -20,7 +20,7 @@
       android:label="syntelos">
 
     <activity
-        android:name=".Editor"
+        android:name="Editor"
         android:windowSoftInputMode="stateHidden|adjustResize">
       <intent-filter>
         <action android:name="android.intent.action.MAIN" />
