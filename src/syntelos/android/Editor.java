@@ -25,6 +25,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.preference.PreferenceManager;
+import android.text.Editable;
 import android.text.InputType;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
@@ -110,6 +111,16 @@ public class Editor
 	    }
 	}
     }
+    public void clear(){
+
+	setTitle(Reference.ROOT);
+
+	EditText editor = this.textView;
+	if (null != editor){
+
+	    editor.getText().clear();
+	}
+    }
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
@@ -119,56 +130,7 @@ public class Editor
         textView = (EditText) findViewById(R.id.text);
         scrollView = (ScrollView) findViewById(R.id.vscroll);
 
-
-	textView.setInputType(InputType.TYPE_CLASS_TEXT |
-			      InputType.TYPE_TEXT_FLAG_MULTI_LINE |
-			      InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-
-        textView.setTextSize(10);
-	textView.setTypeface(Typeface.MONOSPACE, Typeface.NORMAL);
-	{
-
-            textView.setOnFocusChangeListener(new View.OnFocusChangeListener()
-            {
-
-                @Override
-                public void onFocusChange (View v, boolean hasFocus)
-                {
-
-                    InputMethodManager imm = (InputMethodManager)
-                        getSystemService(INPUT_METHOD_SERVICE);
-
-                    if (!hasFocus){
-
-                        imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
-		    }
-                }
-            });
-
-            textView.setOnLongClickListener(new View.OnLongClickListener()
-            {
-
-                @Override
-                public boolean onLongClick (View v)
-                {
-
-		    textView.setInputType(InputType.TYPE_CLASS_TEXT |
-                                          InputType.TYPE_TEXT_FLAG_MULTI_LINE |
-                                          InputType
-                                          .TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-
-
-                    textView.setTextSize(8);
-                    textView.setTextSize(10);
-
-                    return false;
-                }
-            });
-	}
-
-
         open(getIntent());
-
     }
 
 }

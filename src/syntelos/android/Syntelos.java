@@ -122,6 +122,8 @@ public abstract class Syntelos
 
     public abstract void save();
 
+    public abstract void clear();
+
 
     protected void checkStoragePermissions(){
 
@@ -150,6 +152,8 @@ public abstract class Syntelos
     @Override
     public void onBackPressed()
     {
+	clear();
+
 	finish();
     }
 
