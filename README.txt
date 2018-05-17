@@ -44,3 +44,5 @@ References
 
     Android Samples, (Googlers), https://github.com/googlesamples
 
+    Icons, (Googlers), https://design.google/, http://material.io/tools/icons
+
