@@ -17,120 +17,54 @@
  */
 package syntelos.android;
 
-
-import android.content.Intent;
-import android.content.SharedPreferences;
-import android.graphics.Typeface;
-import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
-import android.preference.PreferenceManager;
-import android.text.Editable;
-import android.text.InputType;
-import android.view.View;
-import android.view.inputmethod.EditorInfo;
-import android.view.inputmethod.InputMethodManager;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.widget.EditText;
-import android.widget.ScrollView;
-
-import java.io.File;
-import java.net.URI;
+import android.widget.TextView;
 
 /**
- * Plain text editor to complement Manager, Paint, and Shell
- * activities.
+ * Plain text editor.
  * 
+ * @author syntelos
  */
 public class Editor
     extends Syntelos
 {
-
-    private EditText textView;
-    private ScrollView scrollView;
-
 
     public Editor(){
 	super();
     }
 
 
-    public void open(){
-
-	if (null != this.reference){
-
-	    setTitle(this.reference.getFilename());
-
-	    try {
-		this.checkStoragePermissions();
-
-		Reference.Reader reader = this.reference.reader(this.textView);
-
-		reader.execute(this.reference);
-	    }
-	    catch (Exception exc){
-
-		LE(exc,"Error fetching '%s'.",this.reference.toString());
-	    }
-	}
-	else {
-	    Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-	    intent.setType("text/plain");
-	    startActivityForResult(Intent.createChooser(intent, null), 0);
-	}
-    }
-    public void open(Uri u){
-
-	if (null != u){
-
-	    this.reference = new Reference(u);
-
-	    this.open();
-	}
-    }
-    public void open(Intent it){
-
-	if (null != it){
-
-	    this.open(it.getData());
-	}
-    }
-    public void save(){
-
-	if (null != this.reference){
-
-	    try {
-		this.checkStoragePermissions();
-
-		Reference.Writer writer = this.reference.writer(this.textView);
-
-		writer.execute(this.reference);
-	    }
-	    catch (Exception exc){
-
-		LE(exc,"Error storing '%s'.",this.reference.toString());
-	    }
-	}
-    }
-    public void clear(){
-
-	setTitle(Reference.ROOT);
-
-	EditText editor = this.textView;
-	if (null != editor){
-
-	    editor.getText().clear();
-	}
-    }
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
 
 	setContentView(R.layout.edit);
 
-        textView = (EditText) findViewById(R.id.text);
-        scrollView = (ScrollView) findViewById(R.id.vscroll);
+        editor = (EditText) findViewById(R.id.editor);
 
         open(getIntent());
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu)
+    {
+	MenuInflater inflater = getMenuInflater();
+	inflater.inflate(R.menu.editor, menu);
+
+	return true;
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu (Menu menu)
+    {
+        menu.findItem(R.id.view).setVisible (true);
+        menu.findItem(R.id.save).setVisible (true);
+        menu.findItem(R.id.open).setVisible (true);
+
+        return true;
     }
 
 }

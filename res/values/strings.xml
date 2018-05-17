@@ -5,4 +5,6 @@
   <string name="open">Open</string>
   <string name="save">Save</string>
   <string name="cancel">Cancel</string>
+  <string name="view">View</string>
+  <string name="eval">Eval</string>
 </resources>

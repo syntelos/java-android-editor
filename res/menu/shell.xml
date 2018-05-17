@@ -16,4 +16,9 @@
       android:showAsAction="ifRoom"
       android:title="@string/save"
       android:icon="@drawable/ic_action_save" />
+  <item
+      android:id="@+id/eval"
+      android:showAsAction="ifRoom"
+      android:title="@string/eval"
+      android:icon="@drawable/ic_action_eval" />
 </menu>

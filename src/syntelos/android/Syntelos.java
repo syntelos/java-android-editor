@@ -39,13 +39,14 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.WindowManager.LayoutParams;
 import android.widget.EditText;
+import android.widget.TextView;
 
 import java.io.File;
 
 /**
  * 
  * 
- * 
+ * @author syntelos
  */
 public abstract class Syntelos
     extends android.app.Activity
@@ -108,6 +109,8 @@ public abstract class Syntelos
 
 
     protected Reference reference;
+    protected TextView history;
+    protected EditText editor;
 
 
     public Syntelos(){
@@ -115,14 +118,120 @@ public abstract class Syntelos
     }
 
 
+    public void eval(){
+    }
+    public void view(){
+    }
+    public void open(){
 
-    public abstract void open();
+	if (null != this.reference){
 
-    public abstract void open(Uri u);
+	    setTitle(this.reference.getFilename());
 
-    public abstract void save();
+	    try {
+		this.checkStoragePermissions();
 
-    public abstract void clear();
+		Reference.Reader reader = this.reference.reader(this.editor);
+
+		reader.execute(this.reference);
+	    }
+	    catch (Exception exc){
+
+		LE(exc,"Error fetching '%s'.",this.reference.toString());
+	    }
+	}
+	else {
+	    Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+	    intent.setType("text/plain");
+	    startActivityForResult(Intent.createChooser(intent, null), 0);
+	}
+    }
+    public void open(Uri u){
+
+	if (null != u){
+
+	    this.reference = new Reference(u);
+
+	    this.open();
+	}
+    }
+    public void open(Intent it){
+
+	if (null != it){
+
+	    this.open(it.getData());
+	}
+    }
+    public void save(){
+
+	if (null != this.reference){
+
+	    try {
+		this.checkStoragePermissions();
+
+		Reference.Writer writer = this.reference.writer(this.editor);
+
+		writer.execute(this.reference);
+	    }
+	    catch (Exception exc){
+
+		LE(exc,"Error storing '%s'.",this.reference.toString());
+	    }
+	}
+    }
+    public void clear(){
+
+	setTitle(Reference.ROOT);
+
+	EditText editor = this.editor;
+	if (null != editor){
+
+	    editor.getText().clear();
+	}
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode,
+                                    Intent data)
+    {
+
+        if (0 == requestCode && RESULT_OK == resultCode){
+
+            open(data.getData());
+        }
+    }
+
+    @Override
+    public void onRestoreInstanceState (Bundle savedInstanceState)
+    {
+        super.onRestoreInstanceState(savedInstanceState);
+
+
+	open();
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item)
+    {
+        switch (item.getItemId()){
+	case android.R.id.home:
+	    onBackPressed();
+	    break;
+	case R.id.view:
+	    view();
+	    break;
+	case R.id.open:
+	    ask();
+	    break;
+	case R.id.save:
+	    save();
+	    break;
+	case R.id.eval:
+	    eval();
+	    break;
+	}
+        return true;
+    }
 
 
     protected void checkStoragePermissions(){
@@ -155,61 +264,6 @@ public abstract class Syntelos
 	clear();
 
 	finish();
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu)
-    {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.main, menu);
-
-        return true;
-    }
-
-    @Override
-    public boolean onPrepareOptionsMenu (Menu menu)
-    {
-        menu.findItem(R.id.save).setVisible (true);
-        menu.findItem(R.id.open).setVisible (true);
-
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item)
-    {
-        switch (item.getItemId()){
-	case android.R.id.home:
-	    onBackPressed();
-	    break;
-	case R.id.open:
-	    ask();
-	    break;
-	case R.id.save:
-	    save();
-	    break;
-	}
-        return true;
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode,
-                                    Intent data)
-    {
-
-        if (0 == requestCode && RESULT_OK == resultCode){
-
-            open(data.getData());
-        }
-    }
-
-    @Override
-    public void onRestoreInstanceState (Bundle savedInstanceState)
-    {
-        super.onRestoreInstanceState(savedInstanceState);
-
-
-	open();
     }
 
     protected void ask(){
