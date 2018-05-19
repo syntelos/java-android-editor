@@ -21,12 +21,14 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.app.Fragment;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.net.Uri;
@@ -40,6 +42,7 @@ import android.view.MenuItem;
 import android.view.WindowManager.LayoutParams;
 import android.widget.EditText;
 import android.widget.TextView;
+import static android.widget.TextView.BufferType;
 
 import java.io.File;
 
@@ -111,6 +114,7 @@ public abstract class Syntelos
     protected Reference reference;
     protected TextView history;
     protected EditText editor;
+    protected android.os.AsyncTask bgtask;
 
 
     public Syntelos(){
@@ -122,37 +126,50 @@ public abstract class Syntelos
     }
     public void view(){
     }
-    public void open(){
+    public void open(Reference r){
 
-	if (null != this.reference){
+	if (null != r){
 
-	    setTitle(this.reference.getFilename());
+	    this.reference = r;
 
-	    try {
-		this.checkStoragePermissions();
+	    setTitle(r.getFilename());
 
-		Reference.Reader reader = this.reference.reader(this.editor);
+	    if (null == this.bgtask){
+		try {
+		    this.checkStoragePermissions();
 
-		reader.execute(this.reference);
+		    Reference.Reader reader = this.reference.reader(this);
+		    {
+			this.bgtask = reader;
+		    }
+		    reader.execute(r);
+		}
+		catch (Exception exc){
+
+		    LE(exc,"Error fetching '%s'.",r.toString());
+		}
 	    }
-	    catch (Exception exc){
+	    else {
 
-		LE(exc,"Error fetching '%s'.",this.reference.toString());
+		LE("Found BGTASK when opening '%s'.",r.toString());
 	    }
 	}
 	else {
-	    Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-	    intent.setType("text/plain");
-	    startActivityForResult(Intent.createChooser(intent, null), 0);
+	    pick();
 	}
     }
     public void open(Uri u){
 
 	if (null != u){
+	    try {
+		Reference re = new Reference(u);
 
-	    this.reference = new Reference(u);
+		open(re);
+	    }
+	    catch (RuntimeException exc){
 
-	    this.open();
+		LE(exc,"Error constructing reference from '%s'.",u.toString());
+	    }
 	}
     }
     public void open(Intent it){
@@ -162,20 +179,39 @@ public abstract class Syntelos
 	    this.open(it.getData());
 	}
     }
+    public void save(Reference r){
+
+	if (null != r){
+
+	    this.reference = r;
+
+	    this.setTitle(r.getFilename());
+
+	    this.save();
+	}
+    }
     public void save(){
 
 	if (null != this.reference){
 
-	    try {
-		this.checkStoragePermissions();
+	    if (null == this.bgtask){
+		try {
+		    this.checkStoragePermissions();
 
-		Reference.Writer writer = this.reference.writer(this.editor);
+		    Reference.Writer writer = this.reference.writer(this);
+		    {
+			this.bgtask = writer;
+		    }
+		    writer.execute(this.reference);
+		}
+		catch (Exception exc){
 
-		writer.execute(this.reference);
+		    LE(exc,"Error storing '%s'.",this.reference.toString());
+		}
 	    }
-	    catch (Exception exc){
+	    else {
 
-		LE(exc,"Error storing '%s'.",this.reference.toString());
+		LE("Found BGTASK when saving '%s'.",this.reference.toString());
 	    }
 	}
     }
@@ -190,14 +226,118 @@ public abstract class Syntelos
 	}
     }
 
+    protected void onPostExecute(String result){
+
+	EditText target = this.editor;
+	if (null != target){
+
+	    target.setText(result,BufferType.EDITABLE);
+
+	    target.requestFocus();
+	}
+
+	this.bgtask = null;
+    }
+
+    protected void onPostExecute(){
+
+	this.bgtask = null;
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState)
+    {
+        super.onCreate(savedInstanceState);
+
+	LI("onCreate");
+
+	Reference.Register(this);
+    }
+
+    @Override
+    protected void onStart(){
+	super.onStart();
+
+	LI("onStart");
+    }
+
+    @Override
+    protected void onRestart(){
+	super.onRestart();
+
+	LI("onRestart");
+    }
+
+    @Override
+    protected void onResume(){
+	super.onResume();
+
+	LI("onResume");
+    }
+
+    @Override
+    protected void onPause(){
+	super.onPause();
+
+	LI("onPause");
+    }
+
+    @Override
+    protected void onStop(){
+	super.onStop();
+
+	LI("onStop");
+    }
+
+    @Override
+    protected void onDestroy(){
+	super.onDestroy();
+
+	LI("onDestroy");
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig){
+	super.onConfigurationChanged(newConfig);
+
+	LI("onConfigurationChanged");
+    }
+    @Override
+    public void onAttachFragment(Fragment fragment){
+
+	LI("onAttachFragment");
+    }
+    @Override
+    public void onContentChanged(){
+
+	LI("onContentChanged");
+    }
+
+    @Override
+    public void onBackPressed()
+    {
+	LI("onBackPressed");
+
+	clear();
+
+	finishAndRemoveTask();
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode,
                                     Intent data)
     {
 
-        if (0 == requestCode && RESULT_OK == resultCode){
+        if (0 == requestCode && RESULT_OK == resultCode && null != data){
 
-            open(data.getData());
+	    Uri uri = data.getData();
+
+	    if (null != uri){
+
+		LI("onActivityResult open('%s')",uri);
+
+		open(uri);
+	    }
         }
     }
 
@@ -206,8 +346,7 @@ public abstract class Syntelos
     {
         super.onRestoreInstanceState(savedInstanceState);
 
-
-	open();
+	LI("onRestoreInstanceState");
     }
 
     @Override
@@ -220,8 +359,11 @@ public abstract class Syntelos
 	case R.id.view:
 	    view();
 	    break;
+	case R.id.name:
+	    name();
+	    break;
 	case R.id.open:
-	    ask();
+	    pick();
 	    break;
 	case R.id.save:
 	    save();
@@ -234,7 +376,7 @@ public abstract class Syntelos
     }
 
 
-    protected void checkStoragePermissions(){
+    protected final void checkStoragePermissions(){
 
 	final int p_ext = this.checkSelfPermission(WRITE_EXTERNAL_STORAGE);
 
@@ -252,21 +394,27 @@ public abstract class Syntelos
 				    REQUEST_EXTERNAL_STORAGE);
 	}
     }
-    protected void onCreate(Bundle savedInstanceState)
-    {
-        super.onCreate(savedInstanceState);
+    /**
+     * Open file picker
+     */
+    protected final void pick(){
 
-	Reference.Register(this);
-    }
-    @Override
-    public void onBackPressed()
-    {
-	clear();
-
-	finish();
+	Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+	intent.setType("text/plain");
+	startActivityForResult(Intent.createChooser(intent, "Open"), 0);
     }
 
-    protected void ask(){
+    protected final boolean isNameLive(){
+	boolean isRefNull = (null == this.reference);
+	boolean isEditorLive = false;
+	{
+	    EditText editor = this.editor;
+	    isEditorLive = (null != editor && (0 < editor.getText().length()));
+	}
+	return (isRefNull && isEditorLive);
+    }
+
+    protected final void name(){
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(R.string.file);
 
@@ -274,21 +422,32 @@ public abstract class Syntelos
 		public void onClick(DialogInterface dialog, int id){
 		    switch (id){
 		    case DialogInterface.BUTTON_POSITIVE:
-			EditText text =
+			EditText input =
 			    (EditText) ((Dialog) dialog).findViewById(1);
 
-			String name = text.getText().toString();
+			String name = input.getText().toString();
 
 			if (!name.isEmpty()){
 
-			    try {
-				Syntelos.this.reference = new Reference(Syntelos.this.reference,name);
+			    if (Syntelos.this.isNameLive()){
+				try {
 
-				open();
+				    save(new Reference(name));
+				}
+				catch (RuntimeException exc){
+
+				    Syntelos.LD(exc,"Error creating reference to '%s'.",name);
+				}
 			    }
-			    catch (RuntimeException exc){
+			    else {
+				try {
 
-				Syntelos.LD(exc,"Error creating reference to '%s'.",name);
+				    open(new Reference(Syntelos.this.reference,name));
+				}
+				catch (RuntimeException exc){
+
+				    Syntelos.LD(exc,"Error creating reference to '%s'.",name);
+				}
 			    }
 			}
 		    }

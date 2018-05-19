@@ -7,6 +7,11 @@
       android:title="@string/view"
       android:icon="@drawable/ic_action_view" />
   <item
+      android:id="@+id/name"
+      android:showAsAction="ifRoom"
+      android:title="@string/name"
+      android:icon="@drawable/ic_action_name" />
+  <item
       android:id="@+id/open"
       android:showAsAction="ifRoom"
       android:title="@string/open"

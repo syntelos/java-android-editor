@@ -37,6 +37,7 @@ public class Editor
     }
 
 
+    @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
@@ -55,16 +56,6 @@ public class Editor
 	inflater.inflate(R.menu.editor, menu);
 
 	return true;
-    }
-
-    @Override
-    public boolean onPrepareOptionsMenu (Menu menu)
-    {
-        menu.findItem(R.id.view).setVisible (true);
-        menu.findItem(R.id.save).setVisible (true);
-        menu.findItem(R.id.open).setVisible (true);
-
-        return true;
     }
 
 }

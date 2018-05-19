@@ -29,7 +29,6 @@ import android.net.Uri;
 import android.os.Environment;
 import android.text.Editable;
 import android.widget.EditText;
-import static android.widget.TextView.BufferType;
 
 import java.io.File;
 
@@ -73,7 +72,7 @@ public final class Reference
 
 	return (Environment.MEDIA_MOUNTED_READ_ONLY.equals(Environment.getExternalStorageState()));
     }
-    public static File GetRootExternalStorage(){
+    public static File GetRootExternalStorage(Context context){
 
 	return Environment.getExternalStoragePublicDirectory(ROOT);
     }
@@ -85,7 +84,7 @@ public final class Reference
 
 	if (IsExternalStorageMountedWritable()){
 
-	    File root = GetRootExternalStorage();
+	    File root = GetRootExternalStorage(context);
 	    if ((root.isDirectory() && root.canWrite()) || root.mkdirs()){
 
 		Syntelos.LI("GET-ROOT [EXT] '%s'.",root.getPath());
@@ -121,7 +120,7 @@ public final class Reference
 	else {
 	    Cursor cursor = null;
 	    try {
-		cursor = resolver.query(uri,CONTENT_Q_PROJEC,null,null,null);
+		cursor = Reference.resolver.query(uri,CONTENT_Q_PROJEC,null,null,null);
 
 		if (null != cursor && cursor.moveToFirst()){
 
@@ -137,7 +136,7 @@ public final class Reference
 		    }
 		}
 
-		return null;
+		throw new IllegalArgumentException(String.format("Failed to resolve file for URI '%s'.",uri.toString()));
 	    }
 	    finally {
 		if (null != cursor){
@@ -228,6 +227,9 @@ public final class Reference
 	    throw new IllegalArgumentException();
 	}
     }
+    public Reference(String path){
+	this(null,path);
+    }
 
 
     public String getFilename(){
@@ -236,13 +238,13 @@ public final class Reference
     public String getFilepath(){
 	return this.file.getPath();
     }
-    public Reader reader(EditText target){
+    public Reader reader(Syntelos context){
 
-	return new Reader(target);
+	return new Reader(context);
     }
-    public Writer writer(EditText source){
+    public Writer writer(Syntelos context){
 
-	return new Writer(source);
+	return new Writer(context);
     }
 
 
@@ -255,9 +257,9 @@ public final class Reference
     public final static class Reader
 	extends android.os.AsyncTask<Reference,Integer,String>
     {
-	private final ContentResolver resolver;
+	private final Syntelos context;
 
-	private final EditText target;
+	private final ContentResolver resolver;
 
 	private transient String _string;
 
@@ -265,18 +267,11 @@ public final class Reference
 	/**
 	 * From UI thread
 	 */
-	public Reader(EditText target){
+	public Reader(Syntelos context){
 	    super();
-	    if (null != target){
-		this.target = target;
-	    }
-	    else {
-		throw new IllegalArgumentException();
-	    }
-	    final ContentResolver resolver = Reference.resolver;
-	    if (null != resolver){
-
-		this.resolver = resolver;
+	    if (null != context){
+		this.context = context;
+		this.resolver = context.getContentResolver();
 	    }
 	    else {
 		throw new IllegalArgumentException();
@@ -340,9 +335,7 @@ public final class Reference
 	 */
 	protected void onPostExecute(String result){
 
-	    this.target.setText(result,BufferType.EDITABLE);
-
-	    this.target.requestFocus();
+	    this.context.onPostExecute(result);
 	}
     }
 
@@ -352,9 +345,11 @@ public final class Reference
     public final static class Writer
 	extends android.os.AsyncTask<Reference,Float,Void>
     {
+	private final Syntelos context;
+
 	private final ContentResolver resolver;
 
-	private final EditText source;
+	private final Editable source;
 
 	private transient String _string;
 
@@ -362,18 +357,19 @@ public final class Reference
 	/**
 	 * From UI thread
 	 */
-	public Writer(EditText source){
+	public Writer(Syntelos context){
 	    super();
-	    if (null != source){
-		this.source = source;
-	    }
-	    else {
-		throw new IllegalArgumentException();
-	    }
-	    final ContentResolver resolver = Reference.resolver;
-	    if (null != resolver){
+	    if (null != context){
+		this.context = context;
+		this.resolver = context.getContentResolver();
 
-		this.resolver = resolver;
+		final EditText source = context.editor;
+		if (null != source){
+		    this.source = source.getText();
+		}
+		else {
+		    throw new IllegalArgumentException();
+		}
 	    }
 	    else {
 		throw new IllegalArgumentException();
@@ -393,11 +389,9 @@ public final class Reference
 
 	    final Uri uri = params[0].uri;
 
-	    final Editable editable = source.getText();
+	    if (0 < this.source.length()){
 
-	    if (0 < editable.length()){
-
-		final String text = editable.toString();
+		final String text = this.source.toString();
 		try {
 		    copy(text,new java.io.OutputStreamWriter(this.resolver.openOutputStream(uri)));
 		}
@@ -426,6 +420,8 @@ public final class Reference
 	 * From UI thread
 	 */
 	protected void onPostExecute(){
+
+	    this.context.onPostExecute();
 	}
     }
 

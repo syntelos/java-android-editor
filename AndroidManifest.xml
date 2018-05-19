@@ -21,12 +21,15 @@
 
     <activity
         android:name="Editor"
-        android:windowSoftInputMode="stateHidden">
+	android:theme="@style/MaterialTheme"
+        android:windowSoftInputMode="adjustResize|stateAlwaysVisible"
+	android:configChanges="orientation|screenSize|keyboard">
 
       <intent-filter>
         <action android:name="android.intent.action.MAIN" />
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
+
       <intent-filter>
         <action android:name="android.intent.action.EDIT" />
         <action android:name="android.intent.action.SEND" />

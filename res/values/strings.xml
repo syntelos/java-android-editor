@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+  <string name="cancel">Cancel</string>
+  <string name="eval">Eval</string>
   <string name="file">File</string>
   <string name="name">Name</string>
   <string name="open">Open</string>
   <string name="save">Save</string>
-  <string name="cancel">Cancel</string>
   <string name="view">View</string>
-  <string name="eval">Eval</string>
 </resources>
