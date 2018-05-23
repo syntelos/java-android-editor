@@ -24,7 +24,7 @@
         android:layout_height="match_parent"
         android:gravity="top"
 	android:textIsSelectable="true"
-	android:textSize="12px" />
+	android:textSize="12dp" />
 
   </HorizontalScrollView>
 

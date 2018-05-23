@@ -27,10 +27,12 @@ import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.net.Uri;
 import android.os.Environment;
+import android.os.ParcelFileDescriptor;
 import android.text.Editable;
 import android.widget.EditText;
 
 import java.io.File;
+import java.io.FileDescriptor;
 
 /**
  * 
@@ -38,6 +40,75 @@ import java.io.File;
 public final class Reference
     extends java.lang.Object
 {
+    public static class Post {
+
+	public static enum Status {
+	    SUCCESS,
+	    FAILURE;
+	}
+	public final static class Read
+	    extends Post
+	{
+
+	    public final String text;
+
+	    public Read(String text){
+		super(Post.Status.SUCCESS);
+		if (null != text){
+		    this.text = text;
+		}
+		else {
+		    throw new IllegalArgumentException();
+		}
+	    }
+	    public Read(Throwable t, String m){
+		super(t,m);
+		this.text = null;
+	    }
+	}
+	public final static class Write
+	    extends Post
+	{
+
+	    public Write(){
+		super(Post.Status.SUCCESS);
+	    }
+	    public Write(Throwable t, String m){
+		super(t,m);
+	    }
+	}
+
+	public final Status status;
+
+	public final Throwable thrown;
+
+	public final String error;
+
+
+	protected Post(Status s){
+	    super();
+	    if (null != s){
+		this.status = s;
+		this.thrown = null;
+		this.error = null;
+	    }
+	    else {
+		throw new IllegalArgumentException();
+	    }
+	}
+	protected Post(Throwable t, String e){
+	    super();
+	    if (null != t && null != e){
+		this.status = Post.Status.FAILURE;
+		this.thrown = t;
+		this.error = e;
+	    }
+	    else {
+		throw new IllegalArgumentException();
+	    }
+	}
+    }
+
     final static String ROOT = "syntelos";
 
     private static Syntelos context;
@@ -299,13 +370,11 @@ public final class Reference
      * @see UriReader
      */
     public final static class Reader
-	extends android.os.AsyncTask<Reference,Integer,String>
+	extends android.os.AsyncTask<Reference,Integer,Post.Read>
     {
 	private final Syntelos context;
 
 	private final ContentResolver resolver;
-
-	private transient String _string;
 
 
 	/**
@@ -331,19 +400,24 @@ public final class Reference
 	/**
 	 * From BG thread
 	 */
-	protected String doInBackground(final Reference... params){
+	protected Post.Read doInBackground(final Reference... params){
 
 	    final Uri uri = params[0].uri;
 
 	    final StringBuilder strbuf = new StringBuilder();
 	    try {
 		copy(strbuf,new java.io.InputStreamReader(this.resolver.openInputStream(uri)));
-	    }
-	    catch (Exception exc){
 
-		Syntelos.LE(exc,"Error reading '%s'.",uri.toString());
+		return new Post.Read(strbuf.toString());
 	    }
-	    return (_string = strbuf.toString());
+	    catch (Throwable t){
+
+		String m = String.format("Error reading '%s'.",uri.toString());
+
+		Syntelos.LE(t,m);
+
+		return new Post.Read(t,m);
+	    }
 	}
 	/**
 	 * From BG thread
@@ -377,11 +451,11 @@ public final class Reference
 	/**
 	 * From UI thread
 	 */
-	protected void onPostExecute(String result){
+	protected void onPostExecute(Post.Read r){
 
 	    Syntelos.LI("Reference.Reader.onPostExecute");
 
-	    this.context.onPostReader(result);
+	    this.context.onPostReader(r);
 	}
 
 	public String toString(){
@@ -390,9 +464,9 @@ public final class Reference
 	    android.os.AsyncTask.Status status = this.getStatus();
 	    {
 		string.append(this.getClass().getName());
-		string.append(" {");
+		string.append(" [");
 		string.append(status.toString());
-		string.append(":status}");
+		string.append(']');
 	    }
 	    return string.toString();
 	}
@@ -402,15 +476,13 @@ public final class Reference
      * Mixed threading for I/O read task.
      */
     public final static class Writer
-	extends android.os.AsyncTask<Reference,Float,Uri>
+	extends android.os.AsyncTask<Reference,Float,Post.Write>
     {
 	private final Syntelos context;
 
 	private final ContentResolver resolver;
 
 	private final Editable source;
-
-	private transient String _string;
 
 
 	/**
@@ -444,22 +516,72 @@ public final class Reference
 	/**
 	 * From BG thread
 	 */
-	protected Uri doInBackground(final Reference... params){
+	protected Post.Write doInBackground(final Reference... params){
 
-	    final Uri uri = params[0].uri;
+	    Reference ref = params[0];
+	    Uri uri = ref.uri;
+	    File fil = ref.file;
 
-	    if (0 < this.source.length()){
+	    final String text = this.source.toString();
+	    try {
+		/*
+		 * Copy asset file descriptor
+		 */
+		java.io.OutputStream os = this.resolver.openOutputStream(uri);
 
-		final String text = this.source.toString();
+		copy(text,new java.io.OutputStreamWriter(os));
+
+		return new Post.Write();
+	    }
+	    catch (SecurityException sec){
+		/*
+		 * Copy parcel file descriptor
+		 */
+		ParcelFileDescriptor pfd = null;
 		try {
-		    copy(text,new java.io.OutputStreamWriter(this.resolver.openOutputStream(uri)));
-		}
-		catch (Exception exc){
+		    pfd = ParcelFileDescriptor.open(fil,ParcelFileDescriptor.MODE_WRITE_ONLY);
+		    if (null != pfd){
 
-		    Syntelos.LE(exc,"Error writing '%s'.",uri.toString());
+			FileDescriptor fd = pfd.getFileDescriptor();
+
+			java.io.OutputStream os = new java.io.FileOutputStream(fd);
+
+			copy(text,new java.io.OutputStreamWriter(os));
+
+			return new Post.Write();
+		    }
+		    else {
+			throw new java.io.FileNotFoundException(uri.toString());
+		    }
+		}
+		catch (Throwable t){
+
+		    String m = String.format("Error writing '%s'.",uri.toString());
+
+		    Syntelos.LE(t,m);
+
+		    return new Post.Write(t,m);
+		}
+		finally {
+		    if (null != pfd){
+			try {
+			    pfd.close();
+			}
+			catch (java.io.IOException iox){
+
+			    Syntelos.LE(iox,"Error closing '%s'.",uri.toString());
+			}
+		    }
 		}
 	    }
-	    return uri;
+	    catch (Throwable t){
+
+		String m = String.format("Error writing '%s'.",uri.toString());
+
+		Syntelos.LE(t,m);
+
+		return new Post.Write(t,m);
+	    }
 	}
 	/**
 	 * From BG thread
@@ -478,11 +600,11 @@ public final class Reference
 	/**
 	 * From UI thread
 	 */
-	protected void onPostExecute(Uri uri){
+	protected void onPostExecute(Post.Write w){
 
 	    Syntelos.LI("Reference.Writer.onPostExecute");
 
-	    this.context.onPostWriter();
+	    this.context.onPostWriter(w);
 	}
 
 	public String toString(){
@@ -491,9 +613,9 @@ public final class Reference
 	    android.os.AsyncTask.Status status = this.getStatus();
 	    {
 		string.append(this.getClass().getName());
-		string.append(" {");
+		string.append(" [");
 		string.append(status.toString());
-		string.append(":status}");
+		string.append(']');
 	    }
 	    return string.toString();
 	}

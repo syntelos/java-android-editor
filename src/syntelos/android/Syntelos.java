@@ -47,6 +47,8 @@ import static android.widget.TextView.BufferType;
 
 import java.io.File;
 
+import static syntelos.android.Reference.Post.Status.*;
+
 /**
  * 
  * 
@@ -413,46 +415,66 @@ public abstract class Syntelos
     public void afterTextChanged(Editable s){
     }
 
-    protected void onPostReader(String result){
+    protected void onPostReader(Reference.Post.Read r){
 
-	LI("onPostReader [%s]",this.state);
+	switch(r.status){
 
-	this.state = this.state.push(State.POST);
+	case SUCCESS:
 
-	LI("onPostReader [%s]",this.state);
+	    String result = r.text;
 
-	EditText target = this.editor;
-	if (null != target){
+	    LI("onPostReader [%s]",this.state);
 
-	    target.setText(result,BufferType.EDITABLE);
+	    this.state = this.state.push(State.POST);
 
-	    target.requestFocus();
+	    LI("onPostReader [%s]",this.state);
+
+	    EditText target = this.editor;
+	    if (null != target){
+
+		target.setText(result,BufferType.EDITABLE);
+
+		target.requestFocus();
+	    }
+
+	    this.bgtask = null;
+
+	    this.state = this.state.pop(State.POST);
+
+	    LI("onPostReader [%s]",this.state);
+
+	    setTitle(this.reference.getFilename());
+
+	    invalidateOptionsMenu();
+	    break;
+
+	case FAILURE:
+	    break;
 	}
-
-	this.bgtask = null;
-
-	this.state = this.state.pop(State.POST);
-
-	LI("onPostReader [%s]",this.state);
-
-	setTitle(this.reference.getFilename());
-
-	invalidateOptionsMenu();
     }
 
-    protected void onPostWriter(){
+    protected void onPostWriter(Reference.Post.Write w){
 
-	LI("onPostExecute [%s]",this.state);
+	switch(w.status){
 
-	this.bgtask = null;
+	case SUCCESS:
 
-	this.state = this.state.push(State.CLEAN);
+	    LI("onPostExecute [%s]",this.state);
 
-	LI("onPostExecute [%s]",this.state);
+	    this.bgtask = null;
 
-	setTitle(this.reference.getFilename());
+	    this.state = this.state.push(State.CLEAN);
 
-	invalidateOptionsMenu();
+	    LI("onPostExecute [%s]",this.state);
+
+	    setTitle(this.reference.getFilename());
+
+	    invalidateOptionsMenu();
+	    break;
+
+	case FAILURE:
+	    break;
+	}
     }
 
     @Override
