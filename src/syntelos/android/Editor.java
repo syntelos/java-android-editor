@@ -43,7 +43,7 @@ public class Editor
     {
         super.onCreate(savedInstanceState);
 
-	setContentView(R.layout.edit);
+	setContentView(R.layout.editor);
 
         editor = (EditText) findViewById(R.id.editor);
 
