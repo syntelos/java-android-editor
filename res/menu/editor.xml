@@ -3,9 +3,9 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
   <item
       android:id="@+id/view"
-      android:showAsAction="ifRoom"
+      android:showAsAction="always"
       android:title="@string/view"
-      android:icon="@drawable/ic_action_view" />
+      android:icon="@drawable/ic_action_file_drive" />
   <item
       android:id="@+id/name"
       android:showAsAction="ifRoom"

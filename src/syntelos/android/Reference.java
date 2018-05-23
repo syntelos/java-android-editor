@@ -104,6 +104,18 @@ public final class Reference
 	    throw new IllegalStateException(String.format("Failed to create directory '%s'.",root.getPath()));
 	}
     }
+    protected static File GetRoot(){
+	Context context = Reference.context;
+
+	if (null != context){
+
+	    return GetRoot(context);
+	}
+	else {
+
+	    throw new IllegalStateException();
+	}
+    }
 
     protected final static String CONTENT_Q_COLUMN = "_data";
 
@@ -115,9 +127,35 @@ public final class Reference
 
 	if ("file".equalsIgnoreCase(scheme)){
 
-	    return new File(uri.getPath());
+	    File file = new File(uri.getPath());
+
+	    Syntelos.LD("Reference.Resolve(%s) -> File(%s)",uri.toString(),file.getPath());
+
+	    return file;
 	}
 	else {
+	    /*
+	     * 
+	     */
+	    String path = uri.getPath();
+
+	    if (null != path){
+
+		int six = path.indexOf("syntelos/");
+		if (0 < six){
+		    path = path.substring(six+"syntelos/".length());
+
+		    File file = new File(GetRoot(),path);
+
+		    Syntelos.LD("Reference.Resolve(%s) -> (File:Root+Uri:Path) -> File(%s)",uri.toString(),file.getPath());
+
+		    return file;
+		}
+	    }
+
+	    /*
+	     * 
+	     */
 	    Cursor cursor = null;
 	    try {
 		cursor = Reference.resolver.query(uri,CONTENT_Q_PROJEC,null,null,null);
@@ -127,16 +165,16 @@ public final class Reference
 		    final int cix = cursor.getColumnIndex(CONTENT_Q_COLUMN);
 		    if (-1 < cix){
 
-			String path = cursor.getString(cix);
+			path = cursor.getString(cix);
 
 			if (null != path){
+
+			    Syntelos.LD("Reference.Resolve(%s) -> (ContentResolver) -> File(%s)",uri.toString(),path);
 
 			    return new File(path);
 			}
 		    }
 		}
-
-		throw new IllegalArgumentException(String.format("Failed to resolve file for URI '%s'.",uri.toString()));
 	    }
 	    finally {
 		if (null != cursor){
@@ -144,11 +182,17 @@ public final class Reference
 		    cursor.close();
 		}		
 	    }
+
+	    throw new IllegalArgumentException(String.format("Failed to resolve file for URI '%s'.",uri.toString()));
 	}
     }
     protected final static Uri Resolve(File file){
 
-	return Uri.parse(file.toURI().toString());
+	Uri uri = Uri.parse(file.toURI().toString());
+
+	Syntelos.LD("Reference.Resolve(%s) -> Uri(%s)",file.getPath(),uri.toString());
+
+	return uri;
     }
 
     private final static String TXT = "txt";
@@ -335,7 +379,22 @@ public final class Reference
 	 */
 	protected void onPostExecute(String result){
 
-	    this.context.onPostExecute(result);
+	    Syntelos.LI("Reference.Reader.onPostExecute");
+
+	    this.context.onPostReader(result);
+	}
+
+	public String toString(){
+	    StringBuilder string = new StringBuilder();
+
+	    android.os.AsyncTask.Status status = this.getStatus();
+	    {
+		string.append(this.getClass().getName());
+		string.append(" {");
+		string.append(status.toString());
+		string.append(":status}");
+	    }
+	    return string.toString();
 	}
     }
 
@@ -343,7 +402,7 @@ public final class Reference
      * Mixed threading for I/O read task.
      */
     public final static class Writer
-	extends android.os.AsyncTask<Reference,Float,Void>
+	extends android.os.AsyncTask<Reference,Float,Uri>
     {
 	private final Syntelos context;
 
@@ -385,7 +444,7 @@ public final class Reference
 	/**
 	 * From BG thread
 	 */
-	protected Void doInBackground(final Reference... params){
+	protected Uri doInBackground(final Reference... params){
 
 	    final Uri uri = params[0].uri;
 
@@ -400,7 +459,7 @@ public final class Reference
 		    Syntelos.LE(exc,"Error writing '%s'.",uri.toString());
 		}
 	    }
-	    return null;
+	    return uri;
 	}
 	/**
 	 * From BG thread
@@ -419,9 +478,24 @@ public final class Reference
 	/**
 	 * From UI thread
 	 */
-	protected void onPostExecute(){
+	protected void onPostExecute(Uri uri){
 
-	    this.context.onPostExecute();
+	    Syntelos.LI("Reference.Writer.onPostExecute");
+
+	    this.context.onPostWriter();
+	}
+
+	public String toString(){
+	    StringBuilder string = new StringBuilder();
+
+	    android.os.AsyncTask.Status status = this.getStatus();
+	    {
+		string.append(this.getClass().getName());
+		string.append(" {");
+		string.append(status.toString());
+		string.append(":status}");
+	    }
+	    return string.toString();
 	}
     }
 

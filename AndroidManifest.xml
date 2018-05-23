@@ -13,6 +13,8 @@
       android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
   <uses-permission
       android:name="android.permission.WRITE_MEDIA_STORAGE" />
+  <uses-permission
+      android:name="android.permission.MANAGE_DOCUMENTS" />
 
   <application
       android:allowBackup="true"
@@ -26,16 +28,23 @@
 	android:configChanges="orientation|screenSize|keyboard">
 
       <intent-filter>
-        <action android:name="android.intent.action.MAIN" />
-        <category android:name="android.intent.category.LAUNCHER" />
-      </intent-filter>
-
-      <intent-filter>
-        <action android:name="android.intent.action.EDIT" />
         <action android:name="android.intent.action.SEND" />
+        <action android:name="android.intent.action.EDIT" />
         <action android:name="android.intent.action.VIEW" />
         <category android:name="android.intent.category.DEFAULT" />
         <data android:mimeType="text/plain" />
+      </intent-filter>
+    </activity>
+
+    <activity
+        android:name="Shell"
+	android:theme="@style/MaterialTheme"
+        android:windowSoftInputMode="adjustResize|stateAlwaysVisible"
+	android:configChanges="orientation|screenSize|keyboard">
+
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
     </activity>
 

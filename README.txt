@@ -42,6 +42,8 @@ References
 
     Editor, Bill Farmer, https://github.com/billthefarmer/editor
 
+    Drive QuickEditor, (Googlers), https://github.com/gsuitedevs/drive-quickeditors.git
+
     Android Samples, (Googlers), https://github.com/googlesamples
 
     Icons, (Googlers), https://design.google/, http://material.io/tools/icons

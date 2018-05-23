@@ -35,6 +35,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.preference.PreferenceManager;
+import android.text.Editable;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -53,6 +54,7 @@ import java.io.File;
  */
 public abstract class Syntelos
     extends android.app.Activity
+    implements android.text.TextWatcher
 {
 
     protected final static String LOG_TAG = Reference.ROOT;
@@ -94,26 +96,175 @@ public abstract class Syntelos
 	Log.e(LOG_TAG,m,t);
     }
 
+    /**
+     * An enum and a simple linear state list.
+     */
+    public static enum State {
+	EMPTY,
+	CLEAN,
+	DIRTY,
+	POST;
+
+	private State p;
+
+
+	public boolean is(State s){
+
+	    return (s == this);
+	}
+	public boolean isnot(State s){
+
+	    return (s != this);
+	}
+	private boolean has(State s){
+
+	    if (s == this){
+
+		return true;
+	    }
+	    else {
+		State p = this.p;
+		while (null != p){
+
+		    if (s == p){
+			return true;
+		    }
+		    else {
+			p = p.p;
+		    }
+		}
+		return false;
+	    }
+	}
+	private void exclude(State s){
+
+	    if (null == s){
+
+		throw new IllegalArgumentException();
+	    }
+	    else if (s != this){
+
+		State c = this.p, u = null, v;
+
+		if (null != c){
+		    /*
+		     * discard (s) from {s}
+		     */
+		    while (null != c && s != c){
+
+			v = u;
+
+			u = c;
+
+			c = c.p;
+
+			if (s == c){
+
+			    if (null != v){
+
+				v.p = c;
+			    }
+			    u.p = null;
+
+			    break;
+			}
+		    }
+		}
+	    }
+	}
+	public State clear(){
+	    for (State s : values()){
+
+		s.p = null;
+	    }
+	    return EMPTY;
+	}
+	/**
+	 * Inclusive combination ensures that the argument is on top
+	 * <pre>
+	 * state = state.push(S)
+	 * </pre>
+	 * and the list is not cyclic.
+	 */
+	public State push(State s){
+
+	    if (null == s){
+
+		throw new IllegalArgumentException();
+	    }
+	    else if (s != this){
+
+		if (this.has(s)){
+
+		    this.exclude(s);
+		}
+
+		s.p = this;
+	    }
+	    return s;
+	}
+	/**
+	 * Exclusive combination ensures that the argument is not on
+	 * top
+	 * <pre>
+	 * state = state.push(S)
+	 * </pre>
+	 * and the list is not cyclic.
+	 */
+	public State pop(State s){
+
+	    if (null == s){
+
+		throw new IllegalArgumentException();
+	    }
+	    else if (s == this){
+
+		State p = this.p;
+		{
+		    this.p = null;
+		}
+		return p;
+	    }
+	    else if (this.has(s)){
+
+		this.exclude(s);
+
+		return this;
+	    }
+	    else {
+
+		throw new IllegalStateException(this.toString()+" pop("+s.toString()+')');
+	    }
+	}
+    };
+
 
     /*
      * 
      */
     private static final int REQUEST_EXTERNAL_STORAGE = 1;
 
-    private static final String WRITE_EXTERNAL_STORAGE = "android.permission.WRITE_EXTERNAL_STORAGE";
-    private static final String WRITE_MEDIA_STORAGE = "android.permission.WRITE_MEDIA_STORAGE";
+    private static final String PERM_WRITE_EXTERNAL = "android.permission.WRITE_EXTERNAL_STORAGE";
+    private static final String PERM_WRITE_MEDIA = "android.permission.WRITE_MEDIA_STORAGE";
+    private static final String PERM_MANAGE_DOCUMENTS = "android.permission.MANAGE_DOCUMENTS";
 
     private static String[] PERMISSIONS_STORAGE_EXT = {
-        WRITE_EXTERNAL_STORAGE
+        PERM_WRITE_EXTERNAL
     };
     private static String[] PERMISSIONS_STORAGE_MED = {
-        WRITE_MEDIA_STORAGE
+        PERM_WRITE_MEDIA
+    };
+    private static String[] PERMISSIONS_STORAGE_DOC = {
+        PERM_MANAGE_DOCUMENTS
     };
 
 
     protected Reference reference;
     protected TextView history;
     protected EditText editor;
+
+    protected State state = State.EMPTY;
+
     protected android.os.AsyncTask bgtask;
 
 
@@ -132,26 +283,20 @@ public abstract class Syntelos
 
 	    this.reference = r;
 
-	    setTitle(r.getFilename());
+	    checkBg("opening");
 
-	    if (null == this.bgtask){
-		try {
-		    this.checkStoragePermissions();
+	    try {
+		this.checkStoragePermissions();
 
-		    Reference.Reader reader = this.reference.reader(this);
-		    {
-			this.bgtask = reader;
-		    }
-		    reader.execute(r);
+		Reference.Reader reader = this.reference.reader(this);
+		{
+		    this.bgtask = reader;
 		}
-		catch (Exception exc){
-
-		    LE(exc,"Error fetching '%s'.",r.toString());
-		}
+		reader.execute(r);
 	    }
-	    else {
+	    catch (Exception exc){
 
-		LE("Found BGTASK when opening '%s'.",r.toString());
+		LE(exc,"Error fetching '%s'.",r.toString());
 	    }
 	}
 	else {
@@ -185,8 +330,6 @@ public abstract class Syntelos
 
 	    this.reference = r;
 
-	    this.setTitle(r.getFilename());
-
 	    this.save();
 	}
     }
@@ -194,24 +337,19 @@ public abstract class Syntelos
 
 	if (null != this.reference){
 
-	    if (null == this.bgtask){
-		try {
-		    this.checkStoragePermissions();
+	    checkBg("saving");
+	    try {
+		this.checkStoragePermissions();
 
-		    Reference.Writer writer = this.reference.writer(this);
-		    {
-			this.bgtask = writer;
-		    }
-		    writer.execute(this.reference);
+		Reference.Writer writer = this.reference.writer(this);
+		{
+		    this.bgtask = writer;
 		}
-		catch (Exception exc){
-
-		    LE(exc,"Error storing '%s'.",this.reference.toString());
-		}
+		writer.execute(this.reference);
 	    }
-	    else {
+	    catch (Exception exc){
 
-		LE("Found BGTASK when saving '%s'.",this.reference.toString());
+		LE(exc,"Error storing '%s'.",this.reference.toString());
 	    }
 	}
     }
@@ -224,9 +362,64 @@ public abstract class Syntelos
 
 	    editor.getText().clear();
 	}
+
+	checkBg("clearing");
+
+	this.state = this.state.clear();
     }
 
-    protected void onPostExecute(String result){
+    protected void checkBg(String when){
+
+	android.os.AsyncTask bg = this.bgtask;
+
+	if (null != bg){
+
+	    this.bgtask = null;
+
+	    if (bg.cancel(true)){
+
+		LE("Found cancelled BGTASK (%s) when %s '%s'.",this.bgtask,when,this.reference.toString());
+	    }
+	    else {
+
+		LE("Found live BGTASK (%s) when %s '%s'.",this.bgtask,when,this.reference.toString());
+	    }
+	}
+    }
+
+    /**
+     * @see android.text.TextWatcher
+     */
+    @Override
+    public void beforeTextChanged(CharSequence s, int start, int count, int after){
+    }
+    @Override
+    public void onTextChanged(CharSequence s, int start, int before, int count){
+
+	if (this.state.is(State.POST)){
+
+	    this.state = this.state.push(State.CLEAN);
+	}
+	else {
+
+	    this.state = this.state.push(State.DIRTY);
+	}
+
+	LI("onTextChanged [%s]",this.state);
+
+	invalidateOptionsMenu();
+    }
+    @Override
+    public void afterTextChanged(Editable s){
+    }
+
+    protected void onPostReader(String result){
+
+	LI("onPostReader [%s]",this.state);
+
+	this.state = this.state.push(State.POST);
+
+	LI("onPostReader [%s]",this.state);
 
 	EditText target = this.editor;
 	if (null != target){
@@ -237,11 +430,29 @@ public abstract class Syntelos
 	}
 
 	this.bgtask = null;
+
+	this.state = this.state.pop(State.POST);
+
+	LI("onPostReader [%s]",this.state);
+
+	setTitle(this.reference.getFilename());
+
+	invalidateOptionsMenu();
     }
 
-    protected void onPostExecute(){
+    protected void onPostWriter(){
+
+	LI("onPostExecute [%s]",this.state);
 
 	this.bgtask = null;
+
+	this.state = this.state.push(State.CLEAN);
+
+	LI("onPostExecute [%s]",this.state);
+
+	setTitle(this.reference.getFilename());
+
+	invalidateOptionsMenu();
     }
 
     @Override
@@ -249,7 +460,7 @@ public abstract class Syntelos
     {
         super.onCreate(savedInstanceState);
 
-	LI("onCreate");
+	LI("onCreate [%s]",this.state);
 
 	Reference.Register(this);
     }
@@ -258,65 +469,65 @@ public abstract class Syntelos
     protected void onStart(){
 	super.onStart();
 
-	LI("onStart");
+	LI("onStart [%s]",this.state);
     }
 
     @Override
     protected void onRestart(){
 	super.onRestart();
 
-	LI("onRestart");
+	LI("onRestart [%s]",this.state);
     }
 
     @Override
     protected void onResume(){
 	super.onResume();
 
-	LI("onResume");
+	LI("onResume [%s]",this.state);
     }
 
     @Override
     protected void onPause(){
 	super.onPause();
 
-	LI("onPause");
+	LI("onPause [%s]",this.state);
     }
 
     @Override
     protected void onStop(){
 	super.onStop();
 
-	LI("onStop");
+	LI("onStop [%s]",this.state);
     }
 
     @Override
     protected void onDestroy(){
 	super.onDestroy();
 
-	LI("onDestroy");
+	LI("onDestroy [%s]",this.state);
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig){
 	super.onConfigurationChanged(newConfig);
 
-	LI("onConfigurationChanged");
+	LI("onConfigurationChanged [%s]",this.state);
     }
     @Override
     public void onAttachFragment(Fragment fragment){
 
-	LI("onAttachFragment");
+	LI("onAttachFragment [%s]",this.state);
     }
     @Override
     public void onContentChanged(){
 
-	LI("onContentChanged");
+	LI("onContentChanged [%s]",this.state);
     }
 
     @Override
     public void onBackPressed()
     {
-	LI("onBackPressed");
+	LI("onBackPressed [%s]",this.state);
 
 	clear();
 
@@ -334,7 +545,7 @@ public abstract class Syntelos
 
 	    if (null != uri){
 
-		LI("onActivityResult open('%s')",uri);
+		LI("onActivityResult open('%s') [%s]",uri,this.state);
 
 		open(uri);
 	    }
@@ -346,7 +557,7 @@ public abstract class Syntelos
     {
         super.onRestoreInstanceState(savedInstanceState);
 
-	LI("onRestoreInstanceState");
+	LI("onRestoreInstanceState [%s]",this.state);
     }
 
     @Override
@@ -357,7 +568,23 @@ public abstract class Syntelos
 	    onBackPressed();
 	    break;
 	case R.id.view:
-	    view();
+	    /*
+	     * Using the first action icon as file status
+	     */
+	    switch(this.state){
+
+	    case EMPTY:
+		name();
+		break;
+
+	    case DIRTY:
+		save();
+		break;
+
+	    default:
+		view();
+		break;
+	    }
 	    break;
 	case R.id.name:
 	    name();
@@ -378,7 +605,7 @@ public abstract class Syntelos
 
     protected final void checkStoragePermissions(){
 
-	final int p_ext = this.checkSelfPermission(WRITE_EXTERNAL_STORAGE);
+	int p_ext = this.checkSelfPermission(PERM_WRITE_EXTERNAL);
 
 	if (PackageManager.PERMISSION_GRANTED != p_ext) {
 
@@ -386,11 +613,19 @@ public abstract class Syntelos
 				    REQUEST_EXTERNAL_STORAGE);
 	}
 
-	final int p_med = this.checkSelfPermission(WRITE_MEDIA_STORAGE);
+	int p_med = this.checkSelfPermission(PERM_WRITE_MEDIA);
 
 	if (PackageManager.PERMISSION_GRANTED != p_med) {
 
 	    this.requestPermissions(PERMISSIONS_STORAGE_MED,
+				    REQUEST_EXTERNAL_STORAGE);
+	}
+
+	int p_doc = this.checkSelfPermission(PERM_MANAGE_DOCUMENTS);
+
+	if (PackageManager.PERMISSION_GRANTED != p_doc) {
+
+	    this.requestPermissions(PERMISSIONS_STORAGE_DOC,
 				    REQUEST_EXTERNAL_STORAGE);
 	}
     }
@@ -401,6 +636,8 @@ public abstract class Syntelos
 
 	Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
 	intent.setType("text/plain");
+	intent.addCategory(Intent.CATEGORY_OPENABLE);
+	intent.putExtra(Intent.EXTRA_LOCAL_ONLY,Boolean.TRUE);
 	startActivityForResult(Intent.createChooser(intent, "Open"), 0);
     }
 

@@ -20,6 +20,7 @@ package syntelos.android;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.widget.EditText;
 import android.widget.TextView;
 
@@ -46,16 +47,45 @@ public class Editor
 
         editor = (EditText) findViewById(R.id.editor);
 
+	editor.addTextChangedListener(this);
+
         open(getIntent());
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu)
     {
+	LI("onCreateOptionsMenu [%s]",this.state);
+
 	MenuInflater inflater = getMenuInflater();
 	inflater.inflate(R.menu.editor, menu);
 
 	return true;
     }
 
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu){
+
+    	LI("onPrepareOptionsMenu [%s]",this.state);
+
+    	super.onPrepareOptionsMenu(menu);
+	/*
+	 * Using the first action icon as file status
+	 */
+    	if (State.DIRTY == this.state){
+
+	    MenuItem status = menu.getItem(0);
+	    {
+		status.setIcon(R.drawable.ic_action_save);
+	    }
+    	}
+    	else {
+
+	    MenuItem status = menu.getItem(0);
+	    {
+		status.setIcon(R.drawable.ic_action_file_drive);
+	    }
+    	}
+    	return true;
+    }
 }
