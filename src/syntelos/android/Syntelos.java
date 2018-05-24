@@ -131,6 +131,9 @@ public abstract class Syntelos
 		    if (s == p){
 			return true;
 		    }
+		    else if (p == p.p){
+			throw new IllegalStateException();
+		    }
 		    else {
 			p = p.p;
 		    }
@@ -138,7 +141,7 @@ public abstract class Syntelos
 		return false;
 	    }
 	}
-	private void exclude(State s){
+	private void discard(State s){
 
 	    if (null == s){
 
@@ -146,30 +149,20 @@ public abstract class Syntelos
 	    }
 	    else if (s != this){
 
-		State c = this.p, u = null, v;
+		State x = this, y;
 
-		if (null != c){
-		    /*
-		     * discard (s) from {s}
-		     */
-		    while (null != c && s != c){
+		while (null != x){
+   		
+		    y = x;
+       	
+		    x = x.p;
 
-			v = u;
+		    if (s == x){
 
-			u = c;
+			y.p = x.p;
+			x.p = null;
 
-			c = c.p;
-
-			if (s == c){
-
-			    if (null != v){
-
-				v.p = c;
-			    }
-			    u.p = null;
-
-			    break;
-			}
+			break;
 		    }
 		}
 	    }
@@ -182,7 +175,7 @@ public abstract class Syntelos
 	    return EMPTY;
 	}
 	/**
-	 * Inclusive combination ensures that the argument is on top
+	 * Inclusive combination ensures that the argument is present
 	 * <pre>
 	 * state = state.push(S)
 	 * </pre>
@@ -198,15 +191,21 @@ public abstract class Syntelos
 
 		if (this.has(s)){
 
-		    this.exclude(s);
+		    this.discard(s);
 		}
 
-		s.p = this;
+		if (this != s && this != s.p){
+
+		    s.p = this;
+		}
+		else {
+		    throw new IllegalStateException();
+		}
 	    }
 	    return s;
 	}
 	/**
-	 * Exclusive combination ensures that the argument is not on
+	 * Exclusive combination ensures that the argument is present
 	 * top
 	 * <pre>
 	 * state = state.push(S)
@@ -229,7 +228,7 @@ public abstract class Syntelos
 	    }
 	    else if (this.has(s)){
 
-		this.exclude(s);
+		this.discard(s);
 
 		return this;
 	    }
@@ -401,15 +400,16 @@ public abstract class Syntelos
 	if (this.state.is(State.POST)){
 
 	    this.state = this.state.push(State.CLEAN);
+
 	}
-	else {
+	else if (this.state.isnot(State.DIRTY)){
 
 	    this.state = this.state.push(State.DIRTY);
+
+	    invalidateOptionsMenu();
 	}
 
 	LI("onTextChanged [%s]",this.state);
-
-	invalidateOptionsMenu();
     }
     @Override
     public void afterTextChanged(Editable s){
