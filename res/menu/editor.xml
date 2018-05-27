@@ -7,18 +7,8 @@
       android:title="@string/view"
       android:icon="@drawable/ic_action_file_drive" />
   <item
-      android:id="@+id/name"
-      android:showAsAction="ifRoom"
-      android:title="@string/name"
-      android:icon="@drawable/ic_action_name" />
-  <item
       android:id="@+id/open"
-      android:showAsAction="ifRoom"
+      android:showAsAction="always"
       android:title="@string/open"
       android:icon="@drawable/ic_action_open" />
-  <item
-      android:id="@+id/save"
-      android:showAsAction="ifRoom"
-      android:title="@string/save"
-      android:icon="@drawable/ic_action_save" />
 </menu>

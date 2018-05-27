@@ -55,7 +55,7 @@ public class Editor
     @Override
     public boolean onCreateOptionsMenu(Menu menu)
     {
-	LI("onCreateOptionsMenu [%s]",this.state);
+	//LI("onCreateOptionsMenu [%s]",this.state);
 
 	MenuInflater inflater = getMenuInflater();
 	inflater.inflate(R.menu.editor, menu);
@@ -66,7 +66,7 @@ public class Editor
     @Override
     public boolean onPrepareOptionsMenu(Menu menu){
 
-    	LI("onPrepareOptionsMenu [%s]",this.state);
+    	//LI("onPrepareOptionsMenu [%s]",this.state);
 
     	super.onPrepareOptionsMenu(menu);
 	/*

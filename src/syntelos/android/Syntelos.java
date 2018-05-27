@@ -409,7 +409,7 @@ public abstract class Syntelos
 	    invalidateOptionsMenu();
 	}
 
-	LI("onTextChanged [%s]",this.state);
+	//LI("onTextChanged [%s]",this.state);
     }
     @Override
     public void afterTextChanged(Editable s){
@@ -423,11 +423,11 @@ public abstract class Syntelos
 
 	    String result = r.text;
 
-	    LI("onPostReader [%s]",this.state);
+	    //LI("onPostReader [%s]",this.state);
 
 	    this.state = this.state.push(State.POST);
 
-	    LI("onPostReader [%s]",this.state);
+	    //LI("onPostReader [%s]",this.state);
 
 	    EditText target = this.editor;
 	    if (null != target){
@@ -441,7 +441,7 @@ public abstract class Syntelos
 
 	    this.state = this.state.pop(State.POST);
 
-	    LI("onPostReader [%s]",this.state);
+	    //LI("onPostReader [%s]",this.state);
 
 	    setTitle(this.reference.getFilename());
 
@@ -459,13 +459,13 @@ public abstract class Syntelos
 
 	case SUCCESS:
 
-	    LI("onPostExecute [%s]",this.state);
+	    //LI("onPostExecute [%s]",this.state);
 
 	    this.bgtask = null;
 
 	    this.state = this.state.push(State.CLEAN);
 
-	    LI("onPostExecute [%s]",this.state);
+	    //LI("onPostExecute [%s]",this.state);
 
 	    setTitle(this.reference.getFilename());
 
@@ -482,7 +482,7 @@ public abstract class Syntelos
     {
         super.onCreate(savedInstanceState);
 
-	LI("onCreate [%s]",this.state);
+	//LI("onCreate [%s]",this.state);
 
 	Reference.Register(this);
     }
@@ -491,65 +491,65 @@ public abstract class Syntelos
     protected void onStart(){
 	super.onStart();
 
-	LI("onStart [%s]",this.state);
+	//LI("onStart [%s]",this.state);
     }
 
     @Override
     protected void onRestart(){
 	super.onRestart();
 
-	LI("onRestart [%s]",this.state);
+	//LI("onRestart [%s]",this.state);
     }
 
     @Override
     protected void onResume(){
 	super.onResume();
 
-	LI("onResume [%s]",this.state);
+	//LI("onResume [%s]",this.state);
     }
 
     @Override
     protected void onPause(){
 	super.onPause();
 
-	LI("onPause [%s]",this.state);
+	//LI("onPause [%s]",this.state);
     }
 
     @Override
     protected void onStop(){
 	super.onStop();
 
-	LI("onStop [%s]",this.state);
+	//LI("onStop [%s]",this.state);
     }
 
     @Override
     protected void onDestroy(){
 	super.onDestroy();
 
-	LI("onDestroy [%s]",this.state);
+	//LI("onDestroy [%s]",this.state);
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig){
 	super.onConfigurationChanged(newConfig);
 
-	LI("onConfigurationChanged [%s]",this.state);
+	//LI("onConfigurationChanged [%s]",this.state);
     }
     @Override
     public void onAttachFragment(Fragment fragment){
 
-	LI("onAttachFragment [%s]",this.state);
+	//LI("onAttachFragment [%s]",this.state);
     }
     @Override
     public void onContentChanged(){
 
-	LI("onContentChanged [%s]",this.state);
+	//LI("onContentChanged [%s]",this.state);
     }
 
     @Override
     public void onBackPressed()
     {
-	LI("onBackPressed [%s]",this.state);
+	//LI("onBackPressed [%s]",this.state);
 
 	clear();
 
@@ -567,7 +567,7 @@ public abstract class Syntelos
 
 	    if (null != uri){
 
-		LI("onActivityResult open('%s') [%s]",uri,this.state);
+		//LI("onActivityResult open('%s') [%s]",uri,this.state);
 
 		open(uri);
 	    }
@@ -579,7 +579,7 @@ public abstract class Syntelos
     {
         super.onRestoreInstanceState(savedInstanceState);
 
-	LI("onRestoreInstanceState [%s]",this.state);
+	//LI("onRestoreInstanceState [%s]",this.state);
     }
 
     @Override
@@ -595,16 +595,12 @@ public abstract class Syntelos
 	     */
 	    switch(this.state){
 
-	    case EMPTY:
-		name();
-		break;
-
 	    case DIRTY:
 		save();
 		break;
 
 	    default:
-		view();
+		name();
 		break;
 	    }
 	    break;
