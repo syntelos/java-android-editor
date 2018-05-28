@@ -174,6 +174,13 @@ public abstract class Syntelos
 	    }
 	    return EMPTY;
 	}
+	public State clear(State r){
+	    for (State s : values()){
+
+		s.p = null;
+	    }
+	    return r;
+	}
 	/**
 	 * Inclusive combination ensures that the argument is present
 	 * <pre>
@@ -366,7 +373,7 @@ public abstract class Syntelos
 
 	checkBg("clearing");
 
-	this.state = this.state.clear();
+	this.state = this.state.clear(State.EMPTY);
     }
 
     protected void checkBg(String when){
@@ -417,40 +424,35 @@ public abstract class Syntelos
 
     protected void onPostReader(Reference.Post.Read r){
 
-	switch(r.status){
+	this.state = this.state.clear(State.EMPTY);
 
-	case SUCCESS:
+	String result = r.text;
 
-	    String result = r.text;
+	//LI("onPostReader [%s]",this.state);
 
-	    //LI("onPostReader [%s]",this.state);
+	this.state = this.state.push(State.POST);
 
-	    this.state = this.state.push(State.POST);
+	//LI("onPostReader [%s]",this.state);
 
-	    //LI("onPostReader [%s]",this.state);
+	EditText target = this.editor;
+	if (null != target){
 
-	    EditText target = this.editor;
-	    if (null != target){
+	    target.setText(result,BufferType.EDITABLE);
 
-		target.setText(result,BufferType.EDITABLE);
-
-		target.requestFocus();
-	    }
-
-	    this.bgtask = null;
-
-	    this.state = this.state.pop(State.POST);
-
-	    //LI("onPostReader [%s]",this.state);
-
-	    setTitle(this.reference.getFilename());
-
-	    invalidateOptionsMenu();
-	    break;
-
-	case FAILURE:
-	    break;
+	    target.requestFocus();
 	}
+
+	this.state = this.state.pop(State.POST);
+
+	//LI("onPostReader [%s]",this.state);
+
+	setTitle(this.reference.getFilename());
+
+	if (0 < result.length()){
+
+	    this.state = this.state.push(State.CLEAN);
+	}
+	invalidateOptionsMenu();
     }
 
     protected void onPostWriter(Reference.Post.Write w){
@@ -461,9 +463,7 @@ public abstract class Syntelos
 
 	    //LI("onPostExecute [%s]",this.state);
 
-	    this.bgtask = null;
-
-	    this.state = this.state.push(State.CLEAN);
+	    this.state = this.state.clear(State.CLEAN);
 
 	    //LI("onPostExecute [%s]",this.state);
 
@@ -659,16 +659,6 @@ public abstract class Syntelos
 	startActivityForResult(Intent.createChooser(intent, "Open"), 0);
     }
 
-    protected final boolean isNameLive(){
-	boolean isRefNull = (null == this.reference);
-	boolean isEditorLive = false;
-	{
-	    EditText editor = this.editor;
-	    isEditorLive = (null != editor && (0 < editor.getText().length()));
-	}
-	return (isRefNull && isEditorLive);
-    }
-
     protected final void name(){
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(R.string.file);
@@ -684,25 +674,13 @@ public abstract class Syntelos
 
 			if (!name.isEmpty()){
 
-			    if (Syntelos.this.isNameLive()){
-				try {
+			    try {
 
-				    save(new Reference(name));
-				}
-				catch (RuntimeException exc){
-
-				    Syntelos.LD(exc,"Error creating reference to '%s'.",name);
-				}
+				open(new Reference(Syntelos.this.reference,name));
 			    }
-			    else {
-				try {
+			    catch (RuntimeException exc){
 
-				    open(new Reference(Syntelos.this.reference,name));
-				}
-				catch (RuntimeException exc){
-
-				    Syntelos.LD(exc,"Error creating reference to '%s'.",name);
-				}
+				Syntelos.LD(exc,"Error creating reference to '%s'.",name);
 			    }
 			}
 		    }

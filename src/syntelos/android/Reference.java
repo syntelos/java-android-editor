@@ -63,7 +63,7 @@ public final class Reference
 	    }
 	    public Read(Throwable t, String m){
 		super(t,m);
-		this.text = null;
+		this.text = "";
 	    }
 	}
 	public final static class Write
@@ -334,7 +334,7 @@ public final class Reference
 		this.file = new File(rel.file.getParentFile(),path);
 	    }
 	    else {
-		this.file = new File(root,path);
+		this.file = new File(Reference.root,path);
 	    }
 	    this.uri = Reference.Resolve(this.file);
 	}
@@ -403,9 +403,9 @@ public final class Reference
 	protected Post.Read doInBackground(final Reference... params){
 
 	    final Uri uri = params[0].uri;
-
-	    final StringBuilder strbuf = new StringBuilder();
 	    try {
+		final StringBuilder strbuf = new StringBuilder();
+
 		copy(strbuf,new java.io.InputStreamReader(this.resolver.openInputStream(uri)));
 
 		return new Post.Read(strbuf.toString());
