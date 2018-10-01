@@ -17,6 +17,8 @@
  */
 package syntelos.android;
 
+import syntelos.iou.Chbuf;
+
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -33,6 +35,8 @@ import android.widget.EditText;
 
 import java.io.File;
 import java.io.FileDescriptor;
+import java.nio.CharBuffer;
+
 
 /**
  * 
@@ -527,10 +531,14 @@ public final class Reference
 		/*
 		 * Copy asset file descriptor
 		 */
-		java.io.OutputStream os = this.resolver.openOutputStream(uri);
-
-		copy(text,new java.io.OutputStreamWriter(os));
-
+		java.io.Writer os = new java.io.OutputStreamWriter(this.resolver.openOutputStream(uri));
+		try {
+		    os.write(text.toCharArray());
+		    os.flush();
+		}
+		finally {
+		    os.close();
+		}
 		return new Post.Write();
 	    }
 	    catch (SecurityException sec){
@@ -544,9 +552,15 @@ public final class Reference
 
 			FileDescriptor fd = pfd.getFileDescriptor();
 
-			java.io.OutputStream os = new java.io.FileOutputStream(fd);
+			java.io.FileOutputStream os = new java.io.FileOutputStream(fd);
 
-			copy(text,new java.io.OutputStreamWriter(os));
+			java.nio.channels.FileChannel fc = os.getChannel();
+
+			CharBuffer cb = CharBuffer.wrap(text);
+			{
+			    cb.rewind();
+			}
+			Chbuf.write(cb,fc);
 
 			return new Post.Write();
 		    }
@@ -581,20 +595,6 @@ public final class Reference
 		Syntelos.LE(t,m);
 
 		return new Post.Write(t,m);
-	    }
-	}
-	/**
-	 * From BG thread
-	 */
-	private void copy(java.lang.String text, java.io.Writer out)
-	    throws java.io.IOException
-	{
-	    try {
-		out.write(text.toCharArray());
-		out.flush();
-	    }
-	    finally {
-		out.close();
 	    }
 	}
 	/**
